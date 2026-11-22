@@ -53,15 +53,7 @@ button.red{background:#ff4d6d;color:#fff}
 </div>
 
 <div class="box">
-  <h2>🛒 اشتري عنصر</h2>
-  <input class="t" id="item" placeholder="اسم العنصر (مثال: سيارة جديدة)">
-  <input class="t" id="price" inputmode="numeric" placeholder="السعر بالريال">
-  <button class="red" onclick="buy()">شراء</button>
-  <div class="msg" id="msg2"></div>
-</div>
-
-<div class="box">
-  <h2>📜 السجل</h2>
+  <h2>📜 سجل الشحن</h2>
   <div class="list" id="log"></div>
 </div>
 
@@ -78,7 +70,7 @@ function draw(){
   document.getElementById('bal').textContent=ar(W.balance);
   document.getElementById('cnt').textContent='الأكواد المستخدمة: '+ar(W.used.length);
   const l=document.getElementById('log');
-  if(!W.log.length){l.innerHTML='<div class="empty">ما فيه عمليات للحين</div>';return}
+  if(!W.log.length){l.innerHTML='<div class="empty">ما شحنت شي للحين</div>';return}
   l.innerHTML=W.log.slice().reverse().map(x=>`<div><span>${x.t}<br><span class="d">${x.d}</span></span><span class="${x.a>0?'p':'m'}">${x.a>0?'+':'−'}${ar(Math.abs(x.a))}</span></div>`).join('');
 }
 async function sha(s){
@@ -98,16 +90,6 @@ async function redeem(){
   inp.value='';m('msg','✅ انضاف '+ar(a)+' ريال',1);
   document.getElementById('popv').textContent=ar(a);document.getElementById('pop').classList.add('on');
   if(navigator.vibrate)navigator.vibrate(80);
-}
-function buy(){
-  const n=document.getElementById('item').value.trim();
-  const p=parseInt(document.getElementById('price').value.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
-  if(!n)return m('msg2','اكتب اسم العنصر',0);
-  if(!p||p<=0)return m('msg2','اكتب سعر صحيح',0);
-  if(p>W.balance)return m('msg2','❌ رصيدك ما يكفي',0);
-  W.balance-=p;W.log.push({t:'شراء: '+n,a:-p,d:now()});save(W);draw();
-  document.getElementById('item').value='';document.getElementById('price').value='';
-  m('msg2','✅ تم شراء '+n,1);
 }
 document.getElementById('code').addEventListener('keydown',e=>{if(e.key==='Enter')redeem()});
 /* احتياط للأجهزة القديمة */
