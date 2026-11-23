@@ -116,7 +116,7 @@ input.ltr{direction:ltr;text-align:left;margin-bottom:10px}
   <div class="card">
     <div class="who"><small id="whoT"></small><button class="chg" onclick="show('s1')">تغيير</button></div>
     <div class="bal"><span id="bal">0</span> <b>ريال</b></div>
-    <small>اشترِ من داخل اللعبة بنفس الاسم وينخصم من هنا</small>
+    <small id="syncT">اشترِ من داخل اللعبة بنفس الاسم وينخصم من هنا</small>
   </div>
   <div class="box">
     <h2>🎁 أدخل الكود</h2>
@@ -136,11 +136,11 @@ input.ltr{direction:ltr;text-align:left;margin-bottom:10px}
 
 <script>
 /*
-  الربط مع لعبة RPMX (نفس الموقع، فيتشاركون التخزين):
-  - المحفظة الشغالة:  localStorage["cc_wallet"]  = {player, balance, used, log}
-      اللعبة تقرا منها وتخصم وقت الشراء، بشرط إن player نفس اسمك في اللعبة
-  - حسابات الأسماء الثانية: localStorage["cc_accounts"] = { "اسم": {player, balance, log} }
-  - اسمك في اللعبة ينقرا من حفظ اللعبة: localStorage["hajwala_rpm_v1"].name
+  الربط مع لعبة RPMX:
+  - الرصيد محفوظ أونلاين باسم اللاعب على نفس السيرفرات اللي تستخدمها اللعبة
+    (rpmx7/cc/w/<الاسم>)، فاللعبة تشوفه حتى لو كانت أيقونة على الشاشة الرئيسية.
+  - الأكواد المستخدمة محفوظة أونلاين بعد (rpmx7/cc/u/...) عشان الكود ما ينستخدم مرتين.
+  - نسخة محلية: localStorage["cc_wallet"] = {player, balance, used, log, t}
 */
 const H={"70527d8d76422f889d238a69f8047587b808acdaa639ec32c2cd87d4a8d3a4b3": 10, "54e0cb6da686a1be972dd7ee3f79eb4e7aca72e34918b1ba8503e87a27e90bfc": 100, "28aa9688338bce35dc931169044d991517bda4eadd9da9db23727de9b3fca0dd": 50, "eea66673b7c8cc074a4579f76a9e52a429ce99fb9f1b78e7e3872c981abbbb5e": 10, "9e2bae16d716a6581af0027e156d053463b1a23706ad6b899e8c5f4be149e98b": 10, "70ed4a6b68366066aa7d8193e73d21b271eb343f34f47afc01a7d957c4483a6f": 10, "feb89aff759cb4b443e5239dbe51ff6f0d82ec23154522125a7268d1e6d209cb": 10, "f7e29cf7eb2c5149b91eca6858d12f0b1958e05fb62f15aa10d1ac0777891501": 10, "b2bb157656f967dec26ea24641cb0f3d24274a7122280324c34e34ad12265330": 10, "a0219ccdeb0cbc5ca95700416bd1033a6da4ca75325f03e3a2fc7faa42952f55": 10, "5b33f3a2d96946a0e8146f8f764d01b799d0ed082aa50e01686808ed53f1798e": 10, "cf5f8da0890107a159d7f88a51a5059dd8eab6a62774569456405ff2d7969b0a": 10, "827cf97e63ca8edfaff99a61bc47a833ec80b586f38d79306535ff13df99cefc": 10, "0aefcfc90faab9783a9f3865bd3ef6fcbd06aad25d4896da1886660ec1081525": 10, "7827ba9421fa6113652c37571395608fec4d90a7f7be416942861bb472b89ce8": 10, "c3765e3853af0a00bf7c5ef12bc2c7aeda104c662003bdbe047f3a1acf1bb14b": 10, "2e42d4efc653447e1d5cfcc019d8c7a1a0159ff63c892d407a6d2c86febd4a03": 10, "6d24911b2539f9f318f6e2b7b734b8b391de0fd4261c4976cf70ccfeb869c2a1": 10, "ae4effa6e9d8b7bcf948b3471f7f3df018104fbd607f7b57af1cf1bba0d46e5a": 10, "936567bf83ce41f9fd23f3d2e71899e3fd3ac88d4a3c40322965273a2fdc0c1c": 10, "93111bf23d967c6457717d2b9bbf5142f0877b9d5ec2691fadd2370cc1ce6752": 10, "f66e6d8dff3c15456ac37a1db07230f783619bc31555e1ebc9e820f95b5255ef": 10, "de2685c19d2ef2d93e7391aed640f01e0a1cbd31380edb8357bcb13c321cfd52": 10, "0bd1316e4a2ea932677764e2d32d66e6cb09e3b936341067a0013cf3538cca8c": 10, "29220e007180b2633d1f1901f8d153cf07940f948df543bc9d23098356964bca": 10, "7c077e0676ba63b937ddf68e0570c46d275262d5caa4292d401d6a9f521f81f4": 10, "d9bcec1b651e25e4cdbbc95d77dbc5270432a15a778582f0cc638aa1d200237a": 10, "976ba7473052c511b3ad942b5c4b6a774606742bf40504175c39f3cf48f96396": 10, "0eabaf0fc0cd621b4ff67482f924902f2183091b5bf2957f43821c0c03138e74": 10, "ebd3967dbcbd09219a700fd01b96184665b91e16013dfeab276b9f63708c1753": 10, "ca6c4d6344988cf5871cab576e36d3ce95a206cc36937ee818ef1c774c173c16": 10, "bee79dc693c5731e0ec87ac8b23bae965ad54a2e8ace94eb75c5f15a7ac6af40": 10, "74ee37a1dba285358e4b0cba4bed3704eed2c1ba0bc34dae2f59a883ad205c15": 10, "d868917a3729674cd2b12c6aaab062bdffa439af90049159e04a5470ae7b943c": 10, "842c9400f93c0a2fbb2c6544677b940fc2eac0ad0bd61bab5578a8883baa9bc0": 10, "3e6e75697f2b756eb7aa67167ce75a1ecef79a798f80613e50cd0c0447389dd7": 10, "3c0ba4bc71842abd10e14f0832ba2ac1c62cfedc97ea41b94b34db2086dd1596": 10, "408bf87d1fa2bb40047c0202aa47b746f32df6e3cfd7024f6ae67b6361e7b79e": 10, "800b96aa2f7248973147db946a02c9588e9e9c730da5fe6086e9aa1fd3d8cfea": 10, "37f0ea4a045a2cfffd10a98e2ced74bacf2daea07a88e1931c4886111b551fea": 10, "da4cdfb344f9c0095e9ecc5b00655d6091336a96fde391fd50f0565cb9e2492d": 10, "0ffce68798074bd5dcb14ab570adc6a18458054abc3e1caf8c1fd569d973b1bf": 10, "c0239075cdd431595a7021b320ed2d5f1bd6bf30931e0fedacb3c6e993611d6a": 10, "6ae418bf4e9328210bac424dcb9687ba8efe1f07e207bb8f876dc0326d26f25e": 50, "3966c10769552635eebf9b896102710e26c30d50f666fbaaeddcebc644eb7bc4": 50, "1949724962c96e87231ec1f055ad3f9b829b449b6b5b46755c9ee9ee9f5293e6": 50, "20494b14f824c8bcbc5e4166f7a4b7288a45510d72db4a4a965a21a7c6b00547": 50, "3d59672b100031afc980f2c33b3b220f6ee13a22b6f863ca1dc6da3e8c84cc90": 50, "24b8e5bc991ded63730d1f940609375aa8539dd49d815de4639b7969ba2283f3": 50, "0a45f7d8cd3d61649b3ccf41692231d3e810b1ac83c88e64329ca5dc0a117af4": 50, "83bb795d8404d9e0f23e7d662fbc4b89a4113ff94f61b7de583d849d6e96ff94": 50, "f20084699f88335d25894a09f9e7fbad873043b1b63bd2f51a0a7afaa5690670": 50, "39c652d39d1f671a5e088cd9cc5722260cb2c2292162fe333e12dc7f4d6aabc6": 50, "ff8d401d76a9fd6228fb1e1d14bf115d2ee812cb542f2b096992abfee928a7a7": 50, "6e8276845dc458318195c9381e97481fb63a74eaf2220f7e9ab0ea035ef1e774": 50, "e48fba246e18f6f6fc75866a0c501871766a4ad7ab0cebbe12e3eacbd5a1dcad": 50, "3e8d8b9819b238e132ea4925c82438165fc5a1f4bbaa1f2eb866e8fd0f3ac470": 50, "a8fb8b2fcf3385df1f878631012877469f590bd8117bef020bfd97f519aa6539": 50, "c187b4a8a24d6efa53004e0b4b951a7b3faf901ecb825818b3a62500db2a901d": 50, "3a0b2e0d758f79c02f6729f7cef08561d5990832f52a1f438e12cdbeef4b9f48": 50, "e53360a3b2647c43268e3486c2eec52059c880f2cb88d8898282b4f6538053f8": 50, "73d6e04b391c13d875fe245cc7348265b749b99d012f8d819db1b7bf70180ab6": 50, "e6160e6ff561954e8b062d6824371dfdd1bd356f9f0275b008f99d1773345884": 50, "8398b64c5e02ac0ef14726c749415fa4fd7e0a9015f9e928259d138a671b96f0": 50, "f5ed4ab37c67ea5861f2b11b59a40d1b2f0eae58256084746edbcdb3a3e79347": 50, "000cdc93c24f9626a65202a76692b93c6cee2f0c9e3111014b453e4edf7c3518": 50, "6d5ac07d0b013cc6ecba25b471e387e2d946c63ac3f67e2fd7a4afe3062ba6e4": 50, "582de326ab89c4fb42f034e89358509cd5ab906ad0bd19c9b22c6ec94006a4a4": 50, "e228db1079f72a14a6e699c87e5739cd69085fbd39ac12db530e962823e9b676": 50, "47062c4542cb8a92cff90c8ff2f97b1c6a2ef563224251a63423a754b5099155": 50, "70ed8fe6778f369b093d8b1db19d2a167535a54625835c055a593ccc02f236c9": 50, "f74fd8c512451af3bfade9e54b9c15ee578fed88234e9ea0b3c86995ee302050": 50, "f79176ecccd2f1de5eb1436f765cba2b2566a120b7bd55ce6e2f8778f04e107d": 50, "767caf70cb8ae430ddaa039e43d2c082cd511803fe5a19f13e1939bae0deb3c8": 100, "2a3251fae0610383cd56b0466212689e5f726adb4a4fe6ec98600bf7719c6fcb": 100, "d921aa3da96d06869e71a6b81a5f89a6b0aaad2a7c668b0756cc14738e9fb90a": 100, "efb23d39d6b156f957541742a48808a17b09562caf1ba1c17c090c573ed22739": 100, "0e92b0d691419b0184a69b08955f3ba1665d7f21b324864d288a4ac923710f98": 100, "f4afbefaf147263aa6a4c4c605a705fc3f2ffb5fda1dd975af00daa5e9fc8be6": 100, "fa1bfa2377b57dfc882640f371c9475c7d7ab4b22f28ec56f3e4257210d13799": 100, "247018730a7033de0999d77576904a95d4c0057d7a8dde56215ed7f46ff89550": 100, "bec4aff525d960c6f3f8d3025ada039c55d4f4022292939a27e5be45bccbed12": 100, "ee2a56ed20ac8451c5743dbf5f8003b0f425ed7fbcc23cbc0c70b2395f5b1585": 100, "31f1dcb42e61d9112af5159a26d0ea648f89f8428412525bb7e7590eceb8bf73": 100, "bacf1dc29d6d26f994f65d697b8adb738dda9b00cbcda915b8f7d6950e92f18c": 100, "8f3c36adbe076ee3c889f09d86295e08d0c35fa67737f54a9bac1ff4a18d9310": 100, "df3b140fae9a3c18c8cc113f57a9d161013bcc7e2258d9ce3e9b94dd3b9c01cf": 100, "1580ac1493ac9fdb33540795969213004b283581eecf40ea5d7955cc7bfdb86a": 100, "a62aab30b74cfa33e857db51ead6c9a09fa406c485d640c4909260df2bd76fed": 100, "010bdb0e8354020ecb67494d723753c230ec8c55aad109879cbd0ae03a867301": 100, "163aa97ddf96eaf3b7adddfa7b94cf57425478ed236550f0a61180ff451c4336": 100, "ea807dc3b3e714341677710a5eac0364e5e71c5e6405ea1a4fae886eff556ddf": 100, "232761d7464bc1d24e87e2cc053c5665f0f833eea31ab4566ef74b218eae84a8": 100, "08916e416221490d208461e730c4eb67ccb27431be66a23728ccc474eaa7807e": 1000, "afdb003ad427ae826336eb51d6fbe9cbabe4fb49c667fee61312cfb1703a5cf8": 1000, "af542b79b873a503c5ef9e342091139ceff3162eacbdc7b9d8201d2d80a8595a": 1000, "c9dd69932ddc321e7f66c470e4e5e66b7e73793249c476b7b4f7afebbdc4b0d5": 1000, "781065f5fdccbbac747f0d02cece7979bbcee92ad04e25840195765518d2f663": 1000, "4ec8fec26a8c396fec7adf98be187061414cac8445acd79ee7294f5fe4e8d674": 1000, "dbd90ecbd3178361ada48d079f7f1c2f9d891a0ad081627497f77ed56723c725": 1000, "51d187498570bc0354aa86d956e0854504e849c7f76311c54c508fe27548c41b": 1000, "f8dc626d74414ca05d3471edadc3ac2b4ddb60a106a1b92542b6b31bfab4e4ca": 1000, "d929cbd96c6b220613204a9d116610790d8c828e4f9ba310ee379ea7c17c4ae6": 1000};
 const SALT="cc-rpmx-2026";
@@ -157,7 +157,7 @@ function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remov
 
 /* المحفظة الشغالة (نفس شكل اللي تقراه اللعبة) */
 function W(){const w=get('cc_wallet',null);const o=(w&&typeof w==='object')?w:{};
-  return{player:o.player||'',balance:typeof o.balance==='number'?o.balance:0,used:Array.isArray(o.used)?o.used:[],log:Array.isArray(o.log)?o.log:[]}}
+  return{player:o.player||'',balance:typeof o.balance==='number'?o.balance:0,used:Array.isArray(o.used)?o.used:[],log:Array.isArray(o.log)?o.log:[],t:o.t||0}}
 function setW(w){const old=get('cc_wallet',{})||{};put('cc_wallet',Object.assign({},old,w))}
 
 /* نقل بيانات النسخ القديمة مرة وحدة */
@@ -181,6 +181,69 @@ async function gameNames(g){
   if(!out.length){const b=await idbSave(k);try{const o=typeof b==='string'?JSON.parse(b):b;if(o&&o.name)out.push(String(o.name).trim())}catch(e){}}
   return out.filter(Boolean);
 }
+
+/* ===== الاتصال بالسيرفرات (نفس اللي تستخدمها اللعبة) ===== */
+const Mq={
+  BROKERS:['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt','wss://test.mosquitto.org:8081/mqtt'],
+  NS:'rpmx7/',socks:[],hs:[],pid:1,_p:null,enc:new TextEncoder(),dec:new TextDecoder(),
+  list(){try{const r=localStorage.getItem('cc_relay');if(r)return[r]}catch(e){}return this.BROKERS},
+  str(s){const b=this.enc.encode(s);return[b.length>>8,b.length&255,...b]},
+  pkt(h,body){const L=[];let n=body.length;do{let d=n%128;n=Math.floor(n/128);if(n>0)d|=128;L.push(d)}while(n>0);const u=new Uint8Array(1+L.length+body.length);u[0]=h;u.set(L,1);u.set(body,1+L.length);return u},
+  send(ws,u){try{if(ws.readyState===1)ws.send(u)}catch(e){}},
+  open(url){return new Promise((res,rej)=>{let ws;try{ws=new WebSocket(url,'mqtt')}catch(e){return rej(e)}
+    ws.binaryType='arraybuffer';let up=false,buf=new Uint8Array(0);
+    const to=setTimeout(()=>{try{ws.close()}catch(e){}rej(new Error('to'))},8000);
+    ws.onopen=()=>{const id='rpmxcc'+Math.random().toString(36).slice(2,12);ws.send(this.pkt(0x10,[...this.str('MQTT'),4,2,0,40,...this.str(id)]))};
+    ws.onmessage=ev=>{const u=new Uint8Array(ev.data);
+      if(!up){if(u[0]===0x20&&u[3]===0){up=true;clearTimeout(to);ws._pg=setInterval(()=>this.send(ws,new Uint8Array([0xC0,0])),20000);res(ws)}else{clearTimeout(to);try{ws.close()}catch(e){}rej(new Error('no'))}return}
+      const b=new Uint8Array(buf.length+u.length);b.set(buf);b.set(u,buf.length);let o=0;
+      while(o+2<=b.length){let m=1,len=0,i=o+1,d,ok=true;do{if(i>=b.length){ok=false;break}d=b[i++];len+=(d&127)*m;m*=128}while(d&128);
+        if(!ok||i+len>b.length)break;
+        if((b[o]>>4)===3){const q=(b[o]>>1)&3,tl=(b[i]<<8)|b[i+1],topic=this.dec.decode(b.subarray(i+2,i+2+tl));let p=i+2+tl;if(q)p+=2;this.dispatch(topic,this.dec.decode(b.subarray(p,i+len)))}
+        o=i+len}
+      buf=b.slice(o)};
+    ws.onerror=()=>{};
+    ws.onclose=()=>{clearTimeout(to);clearInterval(ws._pg);this.socks=this.socks.filter(x=>x!==ws);if(!up)rej(new Error('closed'))};
+  })},
+  /* يتصل بكل السيرفرات، ويكمل أول ما يشتغل واحد (والباقي يلحقون) */
+  connect(){
+    this.socks=this.socks.filter(w=>w.readyState===1);
+    if(this.socks.length)return Promise.resolve(this.socks.length);
+    if(this._p)return this._p;
+    this._p=new Promise(done=>{const L=this.list();let left=L.length,fin=false;
+      const end=()=>{if(fin)return;fin=true;this._p=null;done(this.socks.length)};
+      L.forEach(u=>this.open(u).then(ws=>{this.socks.push(ws);setTimeout(end,700)}).catch(()=>{}).finally(()=>{if(--left===0)end()}))});
+    return this._p},
+  dispatch(topic,pay){let d=null;if(pay)try{d=JSON.parse(pay)}catch(e){return}this.hs.forEach(h=>{if(h.t===topic)try{h.f(d)}catch(e){}})},
+  /* يجيب الرسائل المحفوظة على موضوع معيّن (null إذا ما فيه نت) */
+  async get(t,ms){const n=await this.connect();if(!n)return null;t=this.NS+t;const got=[];const h={t,f:d=>{if(d)got.push(d)}};this.hs.push(h);
+    this.socks.forEach(ws=>{const id=this.pid=(this.pid%60000)+1;this.send(ws,this.pkt(0x82,[id>>8,id&255,...this.str(t),0]))});
+    await new Promise(r=>setTimeout(r,ms||1800));this.hs=this.hs.filter(x=>x!==h);
+    this.socks.forEach(ws=>{const id=this.pid=(this.pid%60000)+1;this.send(ws,this.pkt(0xA2,[id>>8,id&255,...this.str(t)]))});
+    return got},
+  async pub(t,d,retain){await this.connect();const body=[...this.str(this.NS+t),...(d==null?[]:this.enc.encode(JSON.stringify(d)))];
+    this.socks.forEach(ws=>this.send(ws,this.pkt(0x30|(retain?1:0),body)))},
+};
+const key=n=>String(n||'').trim().toLowerCase().replace(/[\s/+#]+/g,'_').slice(0,20)||'x';
+function syncT(t,ok){const e=document.getElementById('syncT');if(e){e.textContent=t;e.style.opacity=ok?.9:1}}
+function pushOnline(w){if(!w.player)return;Mq.pub('cc/w/'+key(w.player),{name:w.player,balance:w.balance,log:w.log.slice(-40),t:w.t||Date.now()},true)}
+let _sy=null,_syAt=0,_usedUp=false;
+/* يجيب رصيدك من السيرفر، وإذا نسختك أحدث يرفعها */
+function sync(force){
+  if(_sy)return _sy;
+  if(!force&&Date.now()-_syAt<4000)return Promise.resolve(true);
+  _sy=(async()=>{const w=W();if(!w.player)return false;
+    syncT('⏳ جاري تحديث الرصيد…',1);
+    const r=await Mq.get('cc/w/'+key(w.player),1800);
+    const w2=W();if(low(w2.player)!==low(w.player))return false;
+    if(r===null){syncT('⚠️ ما فيه نت، الرصيد ممكن ما يكون محدّث',0);return false}
+    let best=null;r.forEach(d=>{if(d&&typeof d.balance==='number'&&(!best||(d.t||0)>(best.t||0)))best=d});
+    if(best&&(best.t||0)>(w2.t||0)){w2.balance=best.balance;w2.log=Array.isArray(best.log)?best.log:[];w2.t=best.t;setW(w2)}
+    else if((w2.t||0)>((best&&best.t)||0)||(!best&&(w2.balance>0||w2.log.length))){if(!w2.t)w2.t=Date.now();setW(w2);pushOnline(w2)}
+    if(!_usedUp){_usedUp=true;w2.used.forEach(h=>Mq.pub('cc/u/'+h.slice(0,24),{t:Date.now(),n:w2.player},true))}
+    _syAt=Date.now();syncT('☁️ رصيدك محفوظ باسمك، وتقدر تشتري فيه من اللعبة',1);draw();return true})()
+    .catch(()=>false).finally(()=>{_sy=null});
+  return _sy}
 
 let WAY=null;
 function pickGame(g){G=g;const T=GAMES[g].title;
@@ -212,6 +275,7 @@ async function loginMail(){
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em))return m('msg1','اكتب إيميل صحيح',0);
   if(!pw)return m('msg1','اكتب كلمة المرور',0);
   const o=await gameSave(G);const acc=(o&&o.accounts)||{};
+  if(!o)return m('msg1','ما لقيت حساب اللعبة هنا، سجّل باسمك أسهل',0);
   if(!acc[em])return m('msg1','❌ هالإيميل مو مسجل في اللعبة',0);
   if(!(await passHash(pw)).includes(acc[em]))return m('msg1','❌ كلمة المرور غلط',0);
   const nm=o.name&&String(o.name).trim();
@@ -224,21 +288,21 @@ function switchTo(name){
   const w=W();
   if(w.player&&low(w.player)===low(name)){w.player=name;setW(w);return}
   const acc=get('cc_accounts',{});
-  if(w.player){acc[low(w.player)]={player:w.player,balance:w.balance,log:w.log}}
-  const t=acc[low(name)]||{player:name,balance:0,log:[]};delete acc[low(name)];
-  if(!w.player&&(w.balance>0||w.log.length)){t.balance+=w.balance;t.log=w.log.concat(t.log)}  /* رصيد قديم بدون اسم */
+  if(w.player){acc[low(w.player)]={player:w.player,balance:w.balance,log:w.log,t:w.t}}
+  const t=acc[low(name)]||{player:name,balance:0,log:[],t:0};delete acc[low(name)];
+  if(!w.player&&(w.balance>0||w.log.length)){t.balance+=w.balance;t.log=w.log.concat(t.log);t.t=Date.now()}  /* رصيد قديم بدون اسم */
   put('cc_accounts',acc);
-  setW({player:name,balance:t.balance,log:t.log,used:w.used});
+  setW({player:name,balance:t.balance,log:t.log,used:w.used,t:t.t||0});
 }
 
 async function login(){
   const typed=document.getElementById('pname').value;
   if(!low(typed))return m('msg0','اكتب اسمك',0);
-  const found=(await gameNames(G)).find(n=>low(n)===low(typed));
-  if(!found)return m('msg0','❌ هالاسم مو موجود في اللعبة',0);
+  /* إذا لقينا الاسم في حفظ اللعبة ناخذه بنفس كتابته، وإذا ما لقيناه نقبل الاسم اللي كتبته */
+  const found=(await gameNames(G)).find(n=>low(n)===low(typed))||typed.trim().replace(/\s+/g,' ');
   switchTo(found);put('cc_last',{g:G});enter();
 }
-function enter(){document.getElementById('whoT').textContent=GAMES[G].title+' • '+W().player;draw();show('s3')}
+function enter(){document.getElementById('whoT').textContent=GAMES[G].title+' • '+W().player;show('s3');draw();sync(true)}
 function toGame(){const u=GAMES[G||'rpmx'].url;try{window.top.location.href=u}catch(e){location.href=u}}
 
 function draw(){
@@ -264,9 +328,15 @@ async function redeem(){
   if(c.length!==7)return m('msg','الكود لازم يكون ٧ أرقام',0);
   const h=await sha(SALT+c);
   if(!(h in H))return m('msg','❌ الكود غلط',0);
+  if(W().used.includes(h))return m('msg','⚠️ هذا الكود مستخدم من قبل',0);
+  const btn=document.querySelector('#s3 .box button');btn.disabled=true;m('msg','⏳ لحظة…',1);
+  const [ok,u]=await Promise.all([sync(true),Mq.get('cc/u/'+h.slice(0,24),1500)]);
+  btn.disabled=false;
+  if(!ok||u===null)return m('msg','❌ تأكد إن النت شغال وجرب مرة ثانية',0);
   const w=W();
-  if(w.used.includes(h))return m('msg','⚠️ هذا الكود مستخدم من قبل',0);
-  const a=H[h];w.balance+=a;w.used.push(h);w.log.push({t:'شحن كود',a:a,d:now()});setW(w);draw();
+  if(u.length){if(!w.used.includes(h)){w.used.push(h);setW(w)}return m('msg','⚠️ هذا الكود مستخدم من قبل',0)}
+  const a=H[h];w.balance+=a;w.used.push(h);w.log.push({t:'شحن كود',a:a,d:now()});w.t=Date.now();setW(w);draw();
+  pushOnline(w);Mq.pub('cc/u/'+h.slice(0,24),{t:Date.now(),n:w.player},true);
   inp.value='';m('msg','✅ انضاف '+ar(a)+' ريال',1);
   document.getElementById('popv').textContent=ar(a);document.getElementById('pop').classList.add('on');
   if(navigator.vibrate)navigator.vibrate(80);
@@ -276,13 +346,14 @@ document.getElementById('code').addEventListener('keydown',e=>{if(e.key==='Enter
 document.getElementById('pname').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 document.getElementById('pass').addEventListener('keydown',e=>{if(e.key==='Enter')loginMail()});
 /* إذا رجعت من اللعبة بعد ما اشتريت، يتحدث الرصيد */
-addEventListener('focus',draw);addEventListener('pageshow',draw);addEventListener('storage',draw);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)draw()});
+const again=()=>{draw();if(document.getElementById('s3').classList.contains('on'))sync()};
+addEventListener('focus',again);addEventListener('pageshow',again);addEventListener('storage',draw);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)again()});
 
 /* البداية: إذا عندك حساب باسمك في اللعبة يدخلك على طول */
 (async function(){
   const last=get('cc_last',{}),w=W();
-  if(last.g&&GAMES[last.g]&&w.player&&(await gameNames(last.g)).some(n=>low(n)===low(w.player))){G=last.g;enter()}
+  if(last.g&&GAMES[last.g]&&w.player){G=last.g;enter()}
   else show('s1');
 })();
 function sha256(a){function r(n,x){return(x>>>n)|(x<<(32-n))}var K=[],H0=[],p=2,c=0;while(c<64){var q=1;for(var f=2;f*f<=p;f++)if(p%f==0){q=0;break}if(q){if(c<8)H0[c]=(Math.pow(p,.5)*4294967296)|0;K[c++]=(Math.pow(p,1/3)*4294967296)|0}p++}a=unescape(encodeURIComponent(a));var l=a.length*8,w=[];a+='\x80';while(a.length%64-56)a+='\x00';for(var i=0;i<a.length;i++)w[i>>2]|=a.charCodeAt(i)<<((3-i%4)*8);w[w.length]=(l/4294967296)|0;w[w.length]=l;var h=H0.slice();for(var j=0;j<w.length;j+=16){var W2=w.slice(j,j+16),o=h.slice();for(i=0;i<64;i++){if(i>15){var s0=r(7,W2[i-15])^r(18,W2[i-15])^(W2[i-15]>>>3),s1=r(17,W2[i-2])^r(19,W2[i-2])^(W2[i-2]>>>10);W2[i]=(W2[i-16]+s0+W2[i-7]+s1)|0}var e=o[4],t1=o[7]+(r(6,e)^r(11,e)^r(25,e))+((e&o[5])^(~e&o[6]))+K[i]+W2[i],A=o[0],t2=(r(2,A)^r(13,A)^r(22,A))+((A&o[1])^(A&o[2])^(o[1]&o[2]));o=[(t1+t2)|0].concat(o);o[4]=(o[4]+t1)|0;o.pop()}for(i=0;i<8;i++)h[i]=(h[i]+o[i])|0}return h.map(function(v){return('00000000'+(v>>>0).toString(16)).slice(-8)}).join('')}
