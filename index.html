@@ -2,7 +2,21 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<script>
+/* إذا المتصفح مصغّر الصفحة، نكبّرها عشان تطلع بحجم الجوال (نفس البوابة) */
+(function(){
+  function fit(){
+    var de=document.documentElement; de.style.zoom="";
+    if(!(navigator.maxTouchPoints>0)) return;
+    var land=Math.abs(window.orientation||0)===90;
+    var sw=land?Math.max(screen.width,screen.height):Math.min(screen.width,screen.height);
+    var w=window.innerWidth;
+    if(sw>0 && w>sw*1.12) de.style.zoom=(w/sw).toFixed(3);
+  }
+  fit(); addEventListener("resize",fit); addEventListener("orientationchange",function(){ setTimeout(fit,300) });
+})();
+</script>
 <title>المحفظة</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -41,9 +55,19 @@ button.g{background:#262c3d;color:#fff}
 .pop>div{background:#161a26;border-radius:22px;padding:30px;text-align:center;width:80%;max-width:320px;animation:z .35s}
 .pop .big{font-size:46px;color:#ffcc00;font-weight:800}
 @keyframes z{from{transform:scale(.5);opacity:0}}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin:calc(env(safe-area-inset-top,0px) - 6px) -14px 16px;padding:10px 14px;border-bottom:1px solid #222839}
+.topbar a{color:#ffcc00;text-decoration:none;font-weight:700;font-size:15px;min-width:60px}
+.topbar b{font-size:16px}.topbar span{min-width:60px}
+.opt{display:flex;align-items:center;gap:12px;background:#161a26;border:1px solid #262c3d;border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;text-align:right}
+.opt:active{transform:scale(.97)}
+.opt .oi{font-size:28px;width:44px;text-align:center}
+.opt b{font-size:16px}.opt small{display:block;opacity:.6;margin-top:3px;font-size:13px}
+.frm{display:none}.frm.on{display:block}
+input.ltr{direction:ltr;text-align:left;margin-bottom:10px}
 </style>
 </head>
 <body>
+<div class="topbar"><a href="#" onclick="leave();return false">→ رجوع</a><b>المحفظة</b><span></span></div>
 
 <!-- الشاشة ١: اختيار اللعبة -->
 <div class="scr" id="s1">
@@ -59,22 +83,38 @@ button.g{background:#262c3d;color:#fff}
   </div>
 </div>
 
-<!-- الشاشة ٢: اسم اللاعب -->
+<!-- الشاشة ٢: طريقة الدخول -->
 <div class="scr" id="s2">
   <h1 id="gname">RPMX</h1>
-  <div class="sub">وش اسمك في اللعبة؟</div>
-  <div class="box">
+  <div class="sub">كيف تبي تسجل دخولك؟</div>
+
+  <div id="opts">
+    <div class="opt" onclick="pickWay('name')"><div class="oi">👤</div><div><b id="oName">سجّل باسمك في لعبة RPMX</b><small>نفس الاسم اللي اخترته في اللعبة</small></div></div>
+    <div class="opt" onclick="pickWay('mail')"><div class="oi">✉️</div><div><b id="oMail">سجّل بالإيميل وكلمة المرور</b><small>نفس الإيميل وكلمة المرور حق حسابك في اللعبة</small></div></div>
+  </div>
+
+  <div class="box frm" id="fName">
+    <h2 id="hName">👤 اسمك في اللعبة</h2>
     <input id="pname" placeholder="اكتب اسمك">
     <button onclick="login()">دخول</button>
     <div class="msg" id="msg0"></div>
   </div>
-  <button class="g" onclick="show('s1')">رجوع</button>
+
+  <div class="box frm" id="fMail">
+    <h2 id="hMail">✉️ حسابك في اللعبة</h2>
+    <input class="ltr" id="email" type="email" inputmode="email" autocomplete="username" placeholder="الإيميل">
+    <input class="ltr" id="pass" type="password" autocomplete="current-password" placeholder="كلمة المرور">
+    <button onclick="loginMail()">دخول</button>
+    <div class="msg" id="msg1"></div>
+  </div>
+
+  <button class="g" onclick="back2()">رجوع</button>
 </div>
 
 <!-- الشاشة ٣: الرصيد والشحن -->
 <div class="scr" id="s3">
   <div class="card">
-    <div class="who"><small id="whoT"></small><button class="chg" onclick="logout()">تغيير</button></div>
+    <div class="who"><small id="whoT"></small><button class="chg" onclick="show('s1')">تغيير</button></div>
     <div class="bal"><span id="bal">0</span> <b>ريال</b></div>
     <small>اشترِ من داخل اللعبة بنفس الاسم وينخصم من هنا</small>
   </div>
@@ -142,8 +182,42 @@ async function gameNames(g){
   return out.filter(Boolean);
 }
 
-function pickGame(g){G=g;document.getElementById('gname').textContent=GAMES[g].title;
-  document.getElementById('pname').value='';m('msg0','',1);put('cc_last',{g:g});show('s2')}
+let WAY=null;
+function pickGame(g){G=g;const T=GAMES[g].title;
+  document.getElementById('gname').textContent=T;
+  document.getElementById('oName').textContent='سجّل باسمك في لعبة '+T;
+  document.getElementById('oMail').textContent='سجّل بالإيميل وكلمة المرور حق لعبة '+T;
+  ['pname','email','pass'].forEach(i=>document.getElementById(i).value='');m('msg0','',1);m('msg1','',1);
+  put('cc_last',{g:g});pickWay(null);show('s2')}
+function pickWay(w){WAY=w;
+  document.getElementById('opts').style.display=w?'none':'block';
+  document.getElementById('fName').classList.toggle('on',w==='name');
+  document.getElementById('fMail').classList.toggle('on',w==='mail');
+  setTimeout(()=>{const i=document.getElementById(w==='name'?'pname':w==='mail'?'email':'');if(i)i.focus()},50)}
+function back2(){if(WAY)pickWay(null);else show('s1')}
+function leave(){
+  if(document.getElementById('s2').classList.contains('on')){back2();return}
+  try{if(document.referrer&&new URL(document.referrer).origin===location.origin&&history.length>1){history.back();return}}catch(e){}
+  location.href='/Q-/';
+}
+/* حفظ اللعبة كامل (عشان الإيميل وكلمة المرور) */
+async function gameSave(g){const k=GAMES[g].save;let o=get(k,null);
+  if(!o){const b=await idbSave(k);try{o=typeof b==='string'?JSON.parse(b):b}catch(e){o=null}}
+  return o&&typeof o==='object'?o:null}
+async function passHash(p){
+  const out=[];let h=0;for(const c of p)h=(h*31+c.charCodeAt(0))|0;out.push('x'+h);
+  out.push(await sha('hj:'+p));return out}
+async function loginMail(){
+  const em=document.getElementById('email').value.trim().toLowerCase(),pw=document.getElementById('pass').value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em))return m('msg1','اكتب إيميل صحيح',0);
+  if(!pw)return m('msg1','اكتب كلمة المرور',0);
+  const o=await gameSave(G);const acc=(o&&o.accounts)||{};
+  if(!acc[em])return m('msg1','❌ هالإيميل مو مسجل في اللعبة',0);
+  if(!(await passHash(pw)).includes(acc[em]))return m('msg1','❌ كلمة المرور غلط',0);
+  const nm=o.name&&String(o.name).trim();
+  if(!nm)return m('msg1','حسابك ما له اسم في اللعبة، افتح اللعبة واختر اسمك أول',0);
+  switchTo(nm);put('cc_last',{g:G});enter();
+}
 
 /* تبديل الحساب: الحالي ينحفظ، واللي تبيه يصير هو الشغال */
 function switchTo(name){
@@ -165,7 +239,6 @@ async function login(){
   switchTo(found);put('cc_last',{g:G});enter();
 }
 function enter(){document.getElementById('whoT').textContent=GAMES[G].title+' • '+W().player;draw();show('s3')}
-function logout(){show('s1')}
 function toGame(){const u=GAMES[G||'rpmx'].url;try{window.top.location.href=u}catch(e){location.href=u}}
 
 function draw(){
@@ -201,6 +274,7 @@ async function redeem(){
 
 document.getElementById('code').addEventListener('keydown',e=>{if(e.key==='Enter')redeem()});
 document.getElementById('pname').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+document.getElementById('pass').addEventListener('keydown',e=>{if(e.key==='Enter')loginMail()});
 /* إذا رجعت من اللعبة بعد ما اشتريت، يتحدث الرصيد */
 addEventListener('focus',draw);addEventListener('pageshow',draw);addEventListener('storage',draw);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)draw()});
