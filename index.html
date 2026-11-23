@@ -295,12 +295,25 @@ function switchTo(name){
   setW({player:name,balance:t.balance,log:t.log,used:w.used,t:t.t||0});
 }
 
+/* هل الاسم موجود في اللعبة؟ يدوّر في حفظ اللعبة على هذا الجهاز، وبعدها في سجل أسماء اللاعبين أونلاين
+   (اللعبة تسجل اسم كل لاعب على السيرفر أول ما يفتحها) */
+async function verifyName(g,typed){
+  const loc=(await gameNames(g)).find(n=>low(n)===low(typed));
+  if(loc)return{ok:true,name:loc};
+  const [r1,r2]=await Promise.all([Mq.get('nm/'+key(typed),1800),Mq.get('cc/p/'+key(typed),1800)]);
+  if(r1===null&&r2===null)return{off:true};
+  const r=(r1||[]).filter(d=>d&&d.owner).concat(r2||[]);
+  const rec=r.find(d=>d&&d.name&&low(d.name)===low(typed));
+  return rec?{ok:true,name:String(rec.name||typed).trim()}:{no:true};
+}
 async function login(){
-  const typed=document.getElementById('pname').value;
-  if(!low(typed))return m('msg0','اكتب اسمك',0);
-  /* إذا لقينا الاسم في حفظ اللعبة ناخذه بنفس كتابته، وإذا ما لقيناه نقبل الاسم اللي كتبته */
-  const found=(await gameNames(G)).find(n=>low(n)===low(typed))||typed.trim().replace(/\s+/g,' ');
-  switchTo(found);put('cc_last',{g:G});enter();
+  const typed=document.getElementById('pname').value.trim().replace(/\s+/g,' ');
+  if(!typed)return m('msg0','اكتب اسمك',0);
+  const btn=document.querySelector('#fName button');btn.disabled=true;m('msg0','⏳ أتأكد من اسمك في اللعبة…',1);
+  const v=await verifyName(G,typed);btn.disabled=false;
+  if(v.off)return m('msg0','❌ تأكد إن النت شغال وجرب مرة ثانية',0);
+  if(!v.ok)return m('msg0','❌ هالاسم مو موجود في اللعبة',0);
+  switchTo(v.name);put('cc_last',{g:G});enter();
 }
 function enter(){document.getElementById('whoT').textContent=GAMES[G].title+' • '+W().player;show('s3');draw();sync(true)}
 function toGame(){const u=GAMES[G||'rpmx'].url;try{window.top.location.href=u}catch(e){location.href=u}}
@@ -353,8 +366,14 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)again()});
 /* البداية: إذا عندك حساب باسمك في اللعبة يدخلك على طول */
 (async function(){
   const last=get('cc_last',{}),w=W();
-  if(last.g&&GAMES[last.g]&&w.player){G=last.g;enter()}
-  else show('s1');
+  if(last.g&&GAMES[last.g]&&w.player){
+    G=last.g;enter();
+    /* نتأكد بالخلفية: إذا الاسم مو موجود في اللعبة يرجع يختار من جديد */
+    const v=await verifyName(last.g,w.player);
+    if(v.no){put('cc_last',{});show('s1')}
+    return;
+  }
+  show('s1');
 })();
 function sha256(a){function r(n,x){return(x>>>n)|(x<<(32-n))}var K=[],H0=[],p=2,c=0;while(c<64){var q=1;for(var f=2;f*f<=p;f++)if(p%f==0){q=0;break}if(q){if(c<8)H0[c]=(Math.pow(p,.5)*4294967296)|0;K[c++]=(Math.pow(p,1/3)*4294967296)|0}p++}a=unescape(encodeURIComponent(a));var l=a.length*8,w=[];a+='\x80';while(a.length%64-56)a+='\x00';for(var i=0;i<a.length;i++)w[i>>2]|=a.charCodeAt(i)<<((3-i%4)*8);w[w.length]=(l/4294967296)|0;w[w.length]=l;var h=H0.slice();for(var j=0;j<w.length;j+=16){var W2=w.slice(j,j+16),o=h.slice();for(i=0;i<64;i++){if(i>15){var s0=r(7,W2[i-15])^r(18,W2[i-15])^(W2[i-15]>>>3),s1=r(17,W2[i-2])^r(19,W2[i-2])^(W2[i-2]>>>10);W2[i]=(W2[i-16]+s0+W2[i-7]+s1)|0}var e=o[4],t1=o[7]+(r(6,e)^r(11,e)^r(25,e))+((e&o[5])^(~e&o[6]))+K[i]+W2[i],A=o[0],t2=(r(2,A)^r(13,A)^r(22,A))+((A&o[1])^(A&o[2])^(o[1]&o[2]));o=[(t1+t2)|0].concat(o);o[4]=(o[4]+t1)|0;o.pop()}for(i=0;i<8;i++)h[i]=(h[i]+o[i])|0}return h.map(function(v){return('00000000'+(v>>>0).toString(16)).slice(-8)}).join('')}
 </script>
