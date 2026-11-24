@@ -132,6 +132,8 @@ input.ltr{direction:ltr;text-align:left;margin-bottom:10px}
   </div>
 </div>
 
+<div style="text-align:center;opacity:.35;font-size:12px;margin-top:6px">إصدار ٣</div>
+
 <div class="pop" id="pop" onclick="this.classList.remove('on')"><div><div>تم الشحن 🎉</div><div class="big" id="popv"></div><div>ريال</div></div></div>
 
 <script>
@@ -277,7 +279,9 @@ function sync(force){
     applyEv(n,ev);
     if(!_usedUp){_usedUp=true;W().used.forEach(k=>Mq.pub(uTop(k),{t:Date.now(),n:n},true))}
     _syAt=Date.now();syncT('☁️ رصيدك محفوظ باسمك، وتقدر تشتري فيه من اللعبة',1);return true})();
-  _sy=Promise.race([job,new Promise(r=>setTimeout(()=>r(false),15000))]).catch(()=>false).finally(()=>{_sy=null});
+  _sy=Promise.race([job,new Promise(r=>setTimeout(()=>r('to'),15000))]).catch(()=>false)
+    .then(v=>{if(v==='to'){syncT('⚠️ ما قدرت أحدّث الرصيد، اسحب الصفحة لتحت وجرب مرة ثانية',0);Mq.socks.forEach(ws=>{try{ws.close()}catch(e){}});Mq.socks=[];return false}return v})
+    .finally(()=>{_sy=null});
   return _sy}
 /* إذا فيه عمليات ما وصلت، نحاول كل ٢٠ ثانية */
 setInterval(()=>{if(pend().length&&document.getElementById('s3').classList.contains('on'))sync(true)},20000);
