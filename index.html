@@ -218,7 +218,8 @@ const Mq={
       const end=()=>{if(fin)return;fin=true;this._p=null;done(this.socks.length)};
       L.forEach(u=>this.open(u).then(ws=>{this.socks.push(ws);setTimeout(end,700)}).catch(()=>{}).finally(()=>{if(--left===0)end()}))});
     return this._p},
-  dispatch(topic,pay){let d=null;if(pay)try{d=JSON.parse(pay)}catch(e){return}this.hs.forEach(h=>{if(h.t===topic)try{h.f(d)}catch(e){}})},
+  match(f,t){const a=f.split('/'),b=t.split('/');for(let i=0;i<a.length;i++){if(a[i]==='#')return true;if(i>=b.length)return false;if(a[i]!=='+'&&a[i]!==b[i])return false}return a.length===b.length},
+  dispatch(topic,pay){let d=null;if(pay)try{d=JSON.parse(pay)}catch(e){return}this.hs.forEach(h=>{if(this.match(h.t,topic))try{h.f(d,topic)}catch(e){}})},
   /* يجيب الرسائل المحفوظة على موضوع معيّن (null إذا ما فيه نت) */
   async get(t,ms){const n=await this.connect();if(!n)return null;t=this.NS+t;const got=[];const h={t,f:d=>{if(d)got.push(d)}};this.hs.push(h);
     this.socks.forEach(ws=>{const id=this.pid=(this.pid%60000)+1;this.send(ws,this.pkt(0x82,[id>>8,id&255,...this.str(t),0]))});
@@ -230,24 +231,56 @@ const Mq={
 };
 const key=n=>String(n||'').trim().toLowerCase().replace(/[\s/+#]+/g,'_').slice(0,20)||'x';
 function syncT(t,ok){const e=document.getElementById('syncT');if(e){e.textContent=t;e.style.opacity=ok?.9:1}}
-function pushOnline(w){if(!w.player)return;Mq.pub('cc/w/'+key(w.player),{name:w.player,balance:w.balance,log:w.log.slice(-40),t:w.t||Date.now()},true)}
+/* ===== الرصيد = مجموع العمليات =====
+   كل شحن وكل شراء ينحفظ كعملية مستقلة على السيرفر: rpmx7/cc/e/<الاسم>/<رقم العملية>
+   فما فيه عملية تمسح الثانية، والعملية اللي ما وصلت تنعاد لين توصل */
+const evTop=(n,id)=>'cc/e/'+key(n)+'/'+id;
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function cacheOf(n){const c=get('cc_ev',{});return c[low(n)]||{}}
+function setCache(n,ev){const c=get('cc_ev',{});c[low(n)]=ev;put('cc_ev',c)}
+function pend(){const p=get('cc_pend',[]);return Array.isArray(p)?p:[]}
+function applyEv(n,ev){
+  const L=Object.values(ev).filter(e=>e&&typeof e.a==='number').sort((a,b)=>(a.ts||0)-(b.ts||0));
+  const w=W();if(low(w.player)!==low(n))return;
+  w.balance=L.reduce((s,e)=>s+e.a,0);w.log=L.slice(-60).map(e=>({t:e.t,a:e.a,d:e.d||''}));w.t=Date.now();setW(w);setCache(n,ev);draw();
+}
+function addEv(n,a,t){
+  const e={id:newId(),n:n,a:a,t:t,d:now(),ts:Date.now()};
+  put('cc_pend',pend().concat([e]));
+  const ev=cacheOf(n);ev[e.id]=e;applyEv(n,ev);
+  Mq.pub(evTop(n,e.id),e,true);
+  return e;
+}
 let _sy=null,_syAt=0,_usedUp=false;
-/* يجيب رصيدك من السيرفر، وإذا نسختك أحدث يرفعها */
 function sync(force){
   if(_sy)return _sy;
   if(!force&&Date.now()-_syAt<4000)return Promise.resolve(true);
-  _sy=(async()=>{const w=W();if(!w.player)return false;
+  const job=(async()=>{const w=W(),n=w.player;if(!n)return false;
     syncT('⏳ جاري تحديث الرصيد…',1);
-    const r=await Mq.get('cc/w/'+key(w.player),1800);
-    const w2=W();if(low(w2.player)!==low(w.player))return false;
+    const r=await Mq.get(evTop(n,'+'),2000);
+    if(low(W().player)!==low(n))return false;
     if(r===null){syncT('⚠️ ما فيه نت، الرصيد ممكن ما يكون محدّث',0);return false}
-    let best=null;r.forEach(d=>{if(d&&typeof d.balance==='number'&&(!best||(d.t||0)>(best.t||0)))best=d});
-    if(best&&(best.t||0)>(w2.t||0)){w2.balance=best.balance;w2.log=Array.isArray(best.log)?best.log:[];w2.t=best.t;setW(w2)}
-    else if((w2.t||0)>((best&&best.t)||0)||(!best&&(w2.balance>0||w2.log.length))){if(!w2.t)w2.t=Date.now();setW(w2);pushOnline(w2)}
-    if(!_usedUp){_usedUp=true;w2.used.forEach(k=>Mq.pub(uTop(k),{t:Date.now(),n:w2.player},true))}
-    _syAt=Date.now();syncT('☁️ رصيدك محفوظ باسمك، وتقدر تشتري فيه من اللعبة',1);draw();return true})()
-    .catch(()=>false).finally(()=>{_sy=null});
+    const old=cacheOf(n);
+    /* ما رجع شي مع إن فيه عمليات معروفة: غالباً الاتصال ميت، نقفله عشان يتصل من جديد المرة الجاية */
+    if(!r.length&&Object.keys(old).length){Mq.socks.forEach(ws=>{try{ws.close()}catch(e){}});Mq.socks=[]}
+    const ev=Object.assign({},old);r.forEach(e=>{if(e&&e.id&&typeof e.a==='number')ev[e.id]=e});
+    /* أول مرة: ننقل الرصيد اللي كان قبل نظام العمليات */
+    if(!Object.keys(ev).length&&!Object.keys(cacheOf(n)).length){
+      const o=await Mq.get('cc/w/'+key(n),1200)||[];let best=null;
+      o.forEach(d=>{if(d&&typeof d.balance==='number'&&(!best||(d.t||0)>(best.t||0)))best=d});
+      const lw=W();const src=(lw.t&&(!best||lw.t>(best.t||0)))?lw.balance:(best?best.balance:0);
+      if(src){const b={id:'base',n:n,a:src,t:'رصيد سابق',d:'',ts:1};ev.base=b;Mq.pub(evTop(n,'base'),b,true)}
+    }
+    /* العمليات اللي ما وصلت للسيرفر للحين: نعيد إرسالها */
+    const keep=[];pend().forEach(e=>{if(low(e.n)!==low(n)){keep.push(e);return}if(!r.some(x=>x&&x.id===e.id)){ev[e.id]=e;keep.push(e);Mq.pub(evTop(n,e.id),e,true)}});
+    put('cc_pend',keep);
+    applyEv(n,ev);
+    if(!_usedUp){_usedUp=true;W().used.forEach(k=>Mq.pub(uTop(k),{t:Date.now(),n:n},true))}
+    _syAt=Date.now();syncT('☁️ رصيدك محفوظ باسمك، وتقدر تشتري فيه من اللعبة',1);return true})();
+  _sy=Promise.race([job,new Promise(r=>setTimeout(()=>r(false),15000))]).catch(()=>false).finally(()=>{_sy=null});
   return _sy}
+/* إذا فيه عمليات ما وصلت، نحاول كل ٢٠ ثانية */
+setInterval(()=>{if(pend().length&&document.getElementById('s3').classList.contains('on'))sync(true)},20000);
 
 let WAY=null;
 function pickGame(g){G=g;const T=GAMES[g].title;
@@ -353,8 +386,8 @@ async function redeem(){
   if(!ok||u===null)return m('msg','❌ تأكد إن النت شغال وجرب مرة ثانية',0);
   const w=W();
   if(u.length){if(!w.used.includes(k)){w.used.push(k);setW(w)}return m('msg','⚠️ هذا الكود مستخدم من قبل',0)}
-  const a=H[h];w.balance+=a;w.used.push(k);w.log.push({t:'شحن كود',a:a,d:now()});w.t=Date.now();setW(w);draw();
-  pushOnline(w);Mq.pub(uTop(k),{t:Date.now(),n:w.player},true);
+  const a=H[h];w.used.push(k);setW(w);
+  addEv(w.player,a,'شحن كود');Mq.pub(uTop(k),{t:Date.now(),n:w.player},true);
   inp.value='';m('msg','✅ انضاف '+ar(a)+' ريال',1);
   document.getElementById('popv').textContent=ar(a);document.getElementById('pop').classList.add('on');
   if(navigator.vibrate)navigator.vibrate(80);
