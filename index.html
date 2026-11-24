@@ -132,7 +132,7 @@ input.ltr{direction:ltr;text-align:left;margin-bottom:10px}
   </div>
 </div>
 
-<div style="text-align:center;opacity:.35;font-size:12px;margin-top:6px">إصدار ٣</div>
+<div style="text-align:center;opacity:.35;font-size:12px;margin-top:6px">إصدار ٤</div>
 
 <div class="pop" id="pop" onclick="this.classList.remove('on')"><div><div>تم الشحن 🎉</div><div class="big" id="popv"></div><div>ريال</div></div></div>
 
@@ -253,6 +253,13 @@ function addEv(n,a,t){
   Mq.pub(evTop(n,e.id),e,true);
   return e;
 }
+function reconcile(n,ev){
+  const lw=W();if(low(lw.player)!==low(n))return;
+  const sig=x=>(x.t||'')+'|'+(x.d||'')+'|'+x.a;const known=new Set(Object.values(ev).map(sig));
+  (lw.log||[]).forEach(x=>{if(!x||!(x.a<0))return;const g=sig(x);if(known.has(g))return;
+    let h=0;for(const c of g)h=(h*31+c.charCodeAt(0))|0;const id='og'+(h>>>0).toString(36);if(ev[id])return;
+    const e={id:id,n:n,a:x.a,t:x.t,d:x.d||'',ts:lw.t||Date.now()};ev[id]=e;known.add(g);Mq.pub(evTop(n,id),e,true)});
+}
 let _sy=null,_syAt=0,_usedUp=false;
 function sync(force){
   if(_sy)return _sy;
@@ -273,6 +280,8 @@ function sync(force){
       const lw=W();const src=(lw.t&&(!best||lw.t>(best.t||0)))?lw.balance:(best?best.balance:0);
       if(src){const b={id:'base',n:n,a:src,t:'رصيد سابق',d:'',ts:1};ev.base=b;Mq.pub(evTop(n,'base'),b,true)}
     }
+    /* مشتريات سوّتها نسخة قديمة من اللعبة على هذا الجوال وما وصلت للسيرفر: نرسلها الحين */
+    reconcile(n,ev);
     /* العمليات اللي ما وصلت للسيرفر للحين: نعيد إرسالها */
     const keep=[];pend().forEach(e=>{if(low(e.n)!==low(n)){keep.push(e);return}if(!r.some(x=>x&&x.id===e.id)){ev[e.id]=e;keep.push(e);Mq.pub(evTop(n,e.id),e,true)}});
     put('cc_pend',keep);
