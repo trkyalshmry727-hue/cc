@@ -77,6 +77,10 @@ input.ltr{direction:ltr;text-align:left;margin-bottom:10px}
     <div class="logo">RPMX</div>
     <div><b>RPMX</b><small>لعبة الهجولة</small></div>
   </div>
+  <div class="game" onclick="pickGame('mk')">
+    <div class="logo" style="background:linear-gradient(135deg,#16a34a,#0e7490);font-size:13px;line-height:1.2;text-align:center">معرض<br>المشاكل</div>
+    <div><b>معرض المشاكل</b><small>لعبة معرض السيارات</small></div>
+  </div>
   <div class="game off">
     <div class="logo">؟</div>
     <div><b>لعبة جديدة</b><small>قريباً</small></div>
@@ -132,7 +136,7 @@ input.ltr{direction:ltr;text-align:left;margin-bottom:10px}
   </div>
 </div>
 
-<div style="text-align:center;opacity:.35;font-size:12px;margin-top:6px">إصدار ٤</div>
+<div style="text-align:center;opacity:.35;font-size:12px;margin-top:6px">إصدار ٥</div>
 
 <div class="pop" id="pop" onclick="this.classList.remove('on')"><div><div>تم الشحن 🎉</div><div class="big" id="popv"></div><div>ريال</div></div></div>
 
@@ -150,7 +154,12 @@ const SALT="cc-rpmx-2026";
 const REV={"70527d8d76422f889d238a69f8047587b808acdaa639ec32c2cd87d4a8d3a4b3":2,"eea66673b7c8cc074a4579f76a9e52a429ce99fb9f1b78e7e3872c981abbbb5e":2};
 const uk=h=>REV[h]?h+'r'+REV[h]:h;          /* مفتاح "مستخدم" للكود */
 const uTop=k=>'cc/u/'+k.slice(0,24)+k.slice(64);
-const GAMES={rpmx:{title:"RPMX",save:"hajwala_rpm_v1",url:"/Zzzzzz/"}};
+/* الألعاب: كل لعبة لها رصيدها ومفاتيحها، والأكواد نفسها تشتغل للكل (والكود ينستخدم مرة وحدة بس) */
+const GAMES={
+  rpmx:{title:"RPMX",save:"hajwala_rpm_v1",nf:"name",url:"/Zzzzzz/",pre:"cc/",k:{w:"cc_wallet",a:"cc_accounts",e:"cc_ev",p:"cc_pend"},mail:true},
+  mk:{title:"معرض المشاكل",save:"mshakel_save_v1",nf:"ccName",url:"/ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt/",pre:"cc/mk/",k:{w:"mk_wallet",a:"mk_accounts",e:"mk_ev",p:"mk_pend"},mail:false}
+};
+const K=()=>GAMES[G||'rpmx'].k;
 let G=null;
 
 const get=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
@@ -162,9 +171,9 @@ function m(id,t,ok){const e=document.getElementById(id);e.textContent=t;e.classN
 function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on')}
 
 /* المحفظة الشغالة (نفس شكل اللي تقراه اللعبة) */
-function W(){const w=get('cc_wallet',null);const o=(w&&typeof w==='object')?w:{};
+function W(){const w=get(K().w,null);const o=(w&&typeof w==='object')?w:{};
   return{player:o.player||'',balance:typeof o.balance==='number'?o.balance:0,used:Array.isArray(o.used)?o.used:[],log:Array.isArray(o.log)?o.log:[],t:o.t||0}}
-function setW(w){const old=get('cc_wallet',{})||{};put('cc_wallet',Object.assign({},old,w))}
+function setW(w){const old=get(K().w,{})||{};put(K().w,Object.assign({},old,w))}
 
 /* نقل بيانات النسخ القديمة مرة وحدة */
 (function migrate(){
@@ -182,9 +191,9 @@ function setW(w){const old=get('cc_wallet',{})||{};put('cc_wallet',Object.assign
 function idbSave(key){return new Promise(res=>{try{const r=indexedDB.open("rpmx",1);r.onupgradeneeded=()=>{try{r.result.createObjectStore("kv")}catch(e){}};
   r.onsuccess=()=>{try{const q=r.result.transaction("kv").objectStore("kv").get(key);q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null)}catch(e){res(null)}};r.onerror=()=>res(null)}catch(e){res(null)}})}
 async function gameNames(g){
-  const out=[],k=GAMES[g].save;
-  const a=get(k,null);if(a&&a.name)out.push(String(a.name).trim());
-  if(!out.length){const b=await idbSave(k);try{const o=typeof b==='string'?JSON.parse(b):b;if(o&&o.name)out.push(String(o.name).trim())}catch(e){}}
+  const out=[],k=GAMES[g].save,f=GAMES[g].nf;
+  const a=get(k,null);if(a&&a[f])out.push(String(a[f]).trim());
+  if(!out.length&&g==='rpmx'){const b=await idbSave(k);try{const o=typeof b==='string'?JSON.parse(b):b;if(o&&o[f])out.push(String(o[f]).trim())}catch(e){}}
   return out.filter(Boolean);
 }
 
@@ -236,11 +245,11 @@ function syncT(t,ok){const e=document.getElementById('syncT');if(e){e.textConten
 /* ===== الرصيد = مجموع العمليات =====
    كل شحن وكل شراء ينحفظ كعملية مستقلة على السيرفر: rpmx7/cc/e/<الاسم>/<رقم العملية>
    فما فيه عملية تمسح الثانية، والعملية اللي ما وصلت تنعاد لين توصل */
-const evTop=(n,id)=>'cc/e/'+key(n)+'/'+id;
+const evTop=(n,id)=>GAMES[G||'rpmx'].pre+'e/'+key(n)+'/'+id;
 const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-function cacheOf(n){const c=get('cc_ev',{});return c[low(n)]||{}}
-function setCache(n,ev){const c=get('cc_ev',{});c[low(n)]=ev;put('cc_ev',c)}
-function pend(){const p=get('cc_pend',[]);return Array.isArray(p)?p:[]}
+function cacheOf(n){const c=get(K().e,{});return c[low(n)]||{}}
+function setCache(n,ev){const c=get(K().e,{});c[low(n)]=ev;put(K().e,c)}
+function pend(){const p=get(K().p,[]);return Array.isArray(p)?p:[]}
 function applyEv(n,ev){
   const L=Object.values(ev).filter(e=>e&&typeof e.a==='number').sort((a,b)=>(a.ts||0)-(b.ts||0));
   const w=W();if(low(w.player)!==low(n))return;
@@ -248,7 +257,7 @@ function applyEv(n,ev){
 }
 function addEv(n,a,t){
   const e={id:newId(),n:n,a:a,t:t,d:now(),ts:Date.now()};
-  put('cc_pend',pend().concat([e]));
+  put(K().p,pend().concat([e]));
   const ev=cacheOf(n);ev[e.id]=e;applyEv(n,ev);
   Mq.pub(evTop(n,e.id),e,true);
   return e;
@@ -274,7 +283,7 @@ function sync(force){
     if(!r.length&&Object.keys(old).length){Mq.socks.forEach(ws=>{try{ws.close()}catch(e){}});Mq.socks=[]}
     const ev=Object.assign({},old);r.forEach(e=>{if(e&&e.id&&typeof e.a==='number')ev[e.id]=e});
     /* أول مرة: ننقل الرصيد اللي كان قبل نظام العمليات */
-    if(!Object.keys(ev).length&&!Object.keys(cacheOf(n)).length){
+    if(G==='rpmx'&&!Object.keys(ev).length&&!Object.keys(cacheOf(n)).length){
       const o=await Mq.get('cc/w/'+key(n),1200)||[];let best=null;
       o.forEach(d=>{if(d&&typeof d.balance==='number'&&(!best||(d.t||0)>(best.t||0)))best=d});
       const lw=W();const src=(lw.t&&(!best||lw.t>(best.t||0)))?lw.balance:(best?best.balance:0);
@@ -284,7 +293,7 @@ function sync(force){
     reconcile(n,ev);
     /* العمليات اللي ما وصلت للسيرفر للحين: نعيد إرسالها */
     const keep=[];pend().forEach(e=>{if(low(e.n)!==low(n)){keep.push(e);return}if(!r.some(x=>x&&x.id===e.id)){ev[e.id]=e;keep.push(e);Mq.pub(evTop(n,e.id),e,true)}});
-    put('cc_pend',keep);
+    put(K().p,keep);
     applyEv(n,ev);
     if(!_usedUp){_usedUp=true;W().used.forEach(k=>Mq.pub(uTop(k),{t:Date.now(),n:n},true))}
     _syAt=Date.now();syncT('☁️ رصيدك محفوظ باسمك، وتقدر تشتري فيه من اللعبة',1);return true})();
@@ -301,6 +310,7 @@ function pickGame(g){G=g;const T=GAMES[g].title;
   document.getElementById('oName').textContent='سجّل باسمك في لعبة '+T;
   document.getElementById('oMail').textContent='سجّل بالإيميل وكلمة المرور حق لعبة '+T;
   ['pname','email','pass'].forEach(i=>document.getElementById(i).value='');m('msg0','',1);m('msg1','',1);
+  document.getElementById('oMail').parentNode.parentNode.style.display=GAMES[g].mail?'':'none';
   put('cc_last',{g:g});pickWay(null);show('s2')}
 function pickWay(w){WAY=w;
   document.getElementById('opts').style.display=w?'none':'block';
@@ -337,11 +347,11 @@ async function loginMail(){
 function switchTo(name){
   const w=W();
   if(w.player&&low(w.player)===low(name)){w.player=name;setW(w);return}
-  const acc=get('cc_accounts',{});
+  const acc=get(K().a,{});
   if(w.player){acc[low(w.player)]={player:w.player,balance:w.balance,log:w.log,t:w.t}}
   const t=acc[low(name)]||{player:name,balance:0,log:[],t:0};delete acc[low(name)];
   if(!w.player&&(w.balance>0||w.log.length)){t.balance+=w.balance;t.log=w.log.concat(t.log);t.t=Date.now()}  /* رصيد قديم بدون اسم */
-  put('cc_accounts',acc);
+  put(K().a,acc);
   setW({player:name,balance:t.balance,log:t.log,used:w.used,t:t.t||0});
 }
 
@@ -350,7 +360,7 @@ function switchTo(name){
 async function verifyName(g,typed){
   const loc=(await gameNames(g)).find(n=>low(n)===low(typed));
   if(loc)return{ok:true,name:loc};
-  const [r1,r2]=await Promise.all([Mq.get('nm/'+key(typed),1800),Mq.get('cc/p/'+key(typed),1800)]);
+  const [r1,r2]=await Promise.all([g==='rpmx'?Mq.get('nm/'+key(typed),1800):Promise.resolve(null),Mq.get(GAMES[g].pre+'p/'+key(typed),1800)]);
   if(r1===null&&r2===null)return{off:true};
   const r=(r1||[]).filter(d=>d&&d.owner).concat(r2||[]);
   const rec=r.find(d=>d&&d.name&&low(d.name)===low(typed));
@@ -416,7 +426,11 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)again()});
 
 /* البداية: إذا عندك حساب باسمك في اللعبة يدخلك على طول */
 (async function(){
-  const last=get('cc_last',{}),w=W();
+  const last=get('cc_last',{});
+  /* إذا انفتحت المحفظة من داخل لعبة (/cc/?g=mk) تفتح على هذي اللعبة */
+  let qg=null;try{qg=new URLSearchParams(location.search).get('g')}catch(e){}
+  if(qg&&GAMES[qg]&&qg!==last.g){last.g=qg;put('cc_last',{g:qg});G=qg;if(!W().player){pickGame(qg);return}}
+  if(last.g&&GAMES[last.g])G=last.g;const w=W();
   if(last.g&&GAMES[last.g]&&w.player){
     G=last.g;enter();
     /* نتأكد بالخلفية: إذا الاسم مو موجود في اللعبة يرجع يختار من جديد */
